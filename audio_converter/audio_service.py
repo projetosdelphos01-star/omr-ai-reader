@@ -3,10 +3,11 @@ import tempfile
 import json
 import re
 from typing import Optional, Tuple, Dict, Any
+from dotenv import load_dotenv
 
 from google import genai
 
-
+load_dotenv()
 ALLOWED_AUDIO_EXTENSIONS = {"mp3", "wav", "m4a", "ogg"}
 
 
