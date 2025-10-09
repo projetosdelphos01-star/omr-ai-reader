@@ -162,8 +162,8 @@ class OMRGrader:
                 diff_ratio = (bubble_scores[0][0] - bubble_scores[1][0]) / bubble_scores[0][0]
                 
                 # Definição dos limiares
-                MIN_FILL_THRESHOLD = 0.4  # Mínimo de preenchimento para considerar uma bolha marcada
-                MIN_DIFF_RATIO = 0.15   # Diferença mínima para considerar uma bolha como marcada
+                MIN_FILL_THRESHOLD = 0.0  # Mínimo de preenchimento para considerar uma bolha marcada
+                MIN_DIFF_RATIO = 0.0   # Diferença mínima para considerar uma bolha como marcada
                 
                 # Debug: mostrar informações das bolhas
                 if self.debug_mode:
