@@ -1,13 +1,22 @@
 # main.py
 
+import sys
+from pathlib import Path
+
+# Garante que o diretório raiz do projeto esteja no sys.path
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 import cv2
-from omr import OMRGrader, get_retangles
+from omr.circle import OMRGrader
+from omr.separed_rectangles import get_retangles
 
 # -----------------------------------------------------------------------------
 # PARÂMETROS DE CONFIGURAÇÃO GERAL
 # -----------------------------------------------------------------------------
 # Caminho para a imagem da PROVA COMPLETA
-IMAGEM_PROVA_COMPLETA = "images_test\prova13.jpeg"
+IMAGEM_PROVA_COMPLETA = str(ROOT_DIR / "images_test"/"teste_G.jpeg")
 
 # Configurações do Corretor (OMR)
 MODO_DEBUG = True
@@ -106,5 +115,3 @@ if __name__ == "__main__":
             print(f"  - Pontuação: {resultado['resultados']['score']:.2f}%")
         
         print("\n[FLUXO] Programa finalizado.")
-
-

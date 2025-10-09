@@ -6,8 +6,6 @@ from audio_converter.audio_service import analyze_audio_request
 app = Flask(__name__)
 swagger = Swagger(app)
 
- 
-
    
 
 @app.route('/api/processar-omr', methods=['POST'])
