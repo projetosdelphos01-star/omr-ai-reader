@@ -22,6 +22,11 @@ def upload_file():
 @swag_from('omr/docs/audio_analyze.yml')
 def analyze_audio():
     """Analisar leitura do aluno via áudio"""
+
+    # em app.py, dentro de analyze_audio()
+    print("Content-Type:", request.content_type)
+    print("FILES keys:", list(request.files.keys()))
+    print("FORM keys:", list(request.form.keys()))
     result, status = analyze_audio_request(
         file_storage=request.files.get('audio'),
         reference_text=request.form.get('texto')

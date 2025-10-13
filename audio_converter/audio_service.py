@@ -4,6 +4,7 @@ import json
 import re
 from typing import Optional, Tuple, Dict, Any
 from dotenv import load_dotenv
+load_dotenv()
 
 from google import genai
 
