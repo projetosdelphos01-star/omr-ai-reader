@@ -175,6 +175,14 @@ def process_request(file_storage, gabarito_json_str: Optional[str]) -> Tuple[Dic
         return {"status": "processing_error", "message": f"Erro ao processar o gabarito: {str(e)}"}, 500
 
     GABARITOS = transformar_gabaritos(gabarito_recebido)
+    
+    # Verifica se transformar_gabaritos retornou um erro (dicionário) ao invés de uma lista
+    if isinstance(GABARITOS, dict) and "status" in GABARITOS:
+        return GABARITOS, 400
+    
+    # Verifica se a lista de gabaritos está vazia
+    if not GABARITOS or len(GABARITOS) == 0:
+        return {"status": "bad_request", "message": "Nenhum gabarito válido foi encontrado."}, 400
 
     if file_storage and allowed_file(file_storage.filename):
         try:

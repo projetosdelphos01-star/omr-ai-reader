@@ -39,6 +39,26 @@ def transformar_gabaritos(gabaritos_em_letras):
         # Converte a chave da questão (string) para inteiro e ajusta o índice
         nova_chave = int(questao_str) - 1
         
+        # 5. Tratamento: Se resposta_letra for um dicionário, tenta extrair o valor
+        if isinstance(resposta_letra, dict):
+            # Tenta encontrar a resposta em diferentes chaves possíveis
+            resposta_letra = resposta_letra.get('resposta') or resposta_letra.get('answer') or resposta_letra.get('value') or list(resposta_letra.values())[0] if resposta_letra else None
+            if resposta_letra is None:
+                return {
+                    "status": "bad_request",
+                    "message": f"Resposta inválida no gabarito de índice {i}, questão '{questao_str}': formato de dicionário não reconhecido."
+                }
+        
+        # Verifica se resposta_letra é uma string
+        if not isinstance(resposta_letra, str):
+            return {
+                "status": "bad_request",
+                "message": f"Resposta inválida no gabarito de índice {i}, questão '{questao_str}': esperado string, recebido {type(resposta_letra).__name__}."
+            }
+        
+        # Normaliza para minúscula
+        resposta_letra = resposta_letra.lower().strip()
+        
         # Converte o valor da resposta (letra) para o número correspondente
         novo_valor = mapeamento_respostas[resposta_letra]
         
@@ -57,6 +77,13 @@ def transformar_gabaritos(gabaritos_em_letras):
             return {
                 "status": "bad_request",
                 "message": f"Resposta inválida: '{resposta_letra}' no gabarito de índice {i}. Deve ser 'a', 'b', 'c' ou 'd'."
+            }
+      
+      # 6. Tratamento de erro: Se houver TypeError (unhashable type)
+      except TypeError as e:
+            return {
+                "status": "bad_request",
+                "message": f"Formato de resposta inválido no gabarito de índice {i}, questão '{questao_str}': {str(e)}"
             }
     
     # Adiciona o dicionário de gabarito (mesmo que parcial) à lista final
