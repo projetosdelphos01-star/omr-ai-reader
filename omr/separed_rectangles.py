@@ -33,12 +33,15 @@ def get_retangles(IMAGE_PATH, min_size=100):
         processor.load_and_resize()
         
         # Verifica se a imagem foi carregada
-        if processor.image is None or processor.image.size == 0:
+        if processor.original is None or processor.original.size == 0:
             print(f"[ERRO] Falha ao carregar a imagem: {IMAGE_PATH}")
             return []
         
         processor.correct_perspective()
-        processor.apply_thresholding(blur_ksize=(3, 3), block_size=5, C=3)
+        
+        # Tenta diferentes parâmetros de thresholding para melhor detecção
+        # Primeira tentativa com parâmetros padrão
+        processor.apply_thresholding(blur_ksize=(5, 5), block_size=11, C=2)
         processor.apply_morphological_closing(kernel_size=4)
 
         # Verifica se a imagem processada é válida
@@ -46,19 +49,42 @@ def get_retangles(IMAGE_PATH, min_size=100):
             print(f"[ERRO] Falha no processamento da imagem")
             return []
 
-        # Detecção de retângulos
-        detector = RectangleDetector(processor.processed_image, min_size=min_size)
+        # Detecção de retângulos - tenta com diferentes parâmetros
+        detector = RectangleDetector(processor.processed_image, min_size=min_size, max_size=2000)
         detector.detect()
         detector.group()
-        print(f"[INFO] {len(detector.grouped)} retângulos encontrados.")
+        print(f"[INFO] {len(detector.grouped)} retângulos encontrados com min_size={min_size}.")
 
-        # Se não encontrou retângulos, tenta com min_size menor
-        if len(detector.grouped) == 0 and min_size > 50:
-            print(f"[INFO] Tentando detecção com min_size reduzido (50)...")
-            detector = RectangleDetector(processor.processed_image, min_size=50)
+        # Se não encontrou retângulos, tenta com diferentes parâmetros
+        if len(detector.grouped) == 0:
+            print(f"[INFO] Tentando detecção com parâmetros alternativos de thresholding...")
+            
+            # Tenta com thresholding diferente
+            processor.apply_thresholding(blur_ksize=(3, 3), block_size=7, C=3)
+            processor.apply_morphological_closing(kernel_size=3)
+            detector = RectangleDetector(processor.processed_image, min_size=max(30, min_size // 2), max_size=2000)
             detector.detect()
             detector.group()
-            print(f"[INFO] {len(detector.grouped)} retângulos encontrados com min_size=50.")
+            print(f"[INFO] {len(detector.grouped)} retângulos encontrados com parâmetros alternativos.")
+            
+            # Se ainda não encontrou, tenta detectar diretamente na imagem colorida (warped)
+            if len(detector.grouped) == 0:
+                print(f"[INFO] Tentando detecção na imagem colorida (sem threshold)...")
+                gray_warped = cv2.cvtColor(processor.warped, cv2.COLOR_BGR2GRAY)
+                # Aplica threshold simples na imagem colorida
+                _, thresh_warped = cv2.threshold(gray_warped, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+                detector = RectangleDetector(thresh_warped, min_size=30, max_size=2000)
+                detector.detect()
+                detector.group()
+                print(f"[INFO] {len(detector.grouped)} retângulos encontrados na imagem colorida.")
+            
+            # Última tentativa com min_size muito pequeno
+            if len(detector.grouped) == 0 and min_size > 30:
+                print(f"[INFO] Tentando detecção com min_size mínimo (30)...")
+                detector = RectangleDetector(processor.processed_image, min_size=30, max_size=2000)
+                detector.detect()
+                detector.group()
+                print(f"[INFO] {len(detector.grouped)} retângulos encontrados com min_size=30.")
 
         # Extrai os ROIs coloridos a partir da imagem corrigida
         if len(detector.grouped) == 0:

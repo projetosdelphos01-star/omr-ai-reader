@@ -37,17 +37,13 @@ def process_omr_image(image_path: str, NUM_ALTERNATIVAS: int = 4, GABARITOS: Opt
         # Tenta detectar áreas de resposta
         rois_encontrados = []
         try:
-            # Tenta primeiro com min_size padrão
-            rois_encontrados = get_retangles(image_path, min_size=100)
-            
-            # Se não encontrou, tenta com valores menores
-            if not rois_encontrados or len(rois_encontrados) == 0:
-                rois_encontrados = get_retangles(image_path, min_size=50)
-            
-            if not rois_encontrados or len(rois_encontrados) == 0:
-                rois_encontrados = get_retangles(image_path, min_size=30)
+            # Tenta primeiro com min_size padrão (agora mais flexível)
+            rois_encontrados = get_retangles(image_path, min_size=50)
                 
         except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"[ERRO] Detalhes da exceção: {error_details}")
             return {"status": "detection_error", "message": f"Erro na detecção de áreas: {str(e)}"}
         
         # Verifica se exatamente 2 retângulos foram encontrados
