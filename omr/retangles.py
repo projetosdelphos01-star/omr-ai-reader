@@ -2,7 +2,7 @@ from .preprocessor import DocumentProcessor
 import cv2
 
 class RectangleDetector:
-    def __init__(self, thresh_img, min_size=50, max_size=2000):
+    def __init__(self, thresh_img, min_size=150, max_size=800):
         self.thresh = thresh_img
         self.min_size = min_size
         self.max_size = max_size
@@ -13,16 +13,11 @@ class RectangleDetector:
         contours, _ = cv2.findContours(self.thresh.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         for cnt in contours:
             peri = cv2.arcLength(cnt, True)
-            # Torna a aproximação mais flexível (0.02 -> 0.04) para detectar retângulos menos perfeitos
-            approx = cv2.approxPolyDP(cnt, 0.04 * peri, True)
+            approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
             if len(approx) == 4:
                 x, y, w, h = cv2.boundingRect(approx)
-                # Verifica se o retângulo está dentro dos limites de tamanho
                 if self.min_size < w < self.max_size and self.min_size < h < self.max_size:
-                    # Verifica se a área do contorno é razoável (pelo menos 50% da área do retângulo)
-                    area_ratio = cv2.contourArea(cnt) / (w * h)
-                    if area_ratio > 0.3:  # Pelo menos 30% da área do retângulo
-                        self.rects.append([x, y, w, h])
+                    self.rects.append([x, y, w, h])
         return self.rects
 
     def group(self, group_threshold=1, eps=0.2):
@@ -106,5 +101,4 @@ if __name__ == '__main__':
         print(f"Ocorreu um erro inesperado: {e}")
     finally:
         cv2.destroyAllWindows()
-
 

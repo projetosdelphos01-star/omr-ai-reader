@@ -35,28 +35,16 @@ def process_omr_image(image_path: str, NUM_ALTERNATIVAS: int = 4, GABARITOS: Opt
             return {"status": "invalid_image", "message": f"Erro ao processar a imagem: {str(e)}"}
 
         # Tenta detectar áreas de resposta
-        rois_encontrados = []
         try:
-            # Tenta primeiro com min_size padrão (agora mais flexível)
-            rois_encontrados = get_retangles(image_path, min_size=50)
-                
+            rois_encontrados = get_retangles(image_path, min_size=100)
         except Exception as e:
-            import traceback
-            error_details = traceback.format_exc()
-            print(f"[ERRO] Detalhes da exceção: {error_details}")
             return {"status": "detection_error", "message": f"Erro na detecção de áreas: {str(e)}"}
         
         # Verifica se exatamente 2 retângulos foram encontrados
-        if not rois_encontrados or len(rois_encontrados) == 0:
+        if not rois_encontrados or len(rois_encontrados) != 2:
             return {
                 "status": "invalid_rectangles", 
-                "message": f"Nenhum retângulo detectado na imagem. Verifique se a imagem contém dois retângulos claramente visíveis e se a qualidade da imagem é adequada. Dica: certifique-se de que os retângulos estão bem definidos e contrastados."
-            }
-        
-        if len(rois_encontrados) != 2:
-            return {
-                "status": "invalid_rectangles", 
-                "message": f"Número incorreto de retângulos detectados. Esperado: 2, Encontrado: {len(rois_encontrados)}. Verifique se a imagem contém exatamente dois retângulos de resposta bem visíveis."
+                "message": f"Número incorreto de retângulos detectados. Esperado: 2, Encontrado: {len(rois_encontrados) if rois_encontrados else 0}"
             }
         
         resultados = []
@@ -187,40 +175,18 @@ def process_request(file_storage, gabarito_json_str: Optional[str]) -> Tuple[Dic
         return {"status": "processing_error", "message": f"Erro ao processar o gabarito: {str(e)}"}, 500
 
     GABARITOS = transformar_gabaritos(gabarito_recebido)
-    
-    # Verifica se transformar_gabaritos retornou um erro (dicionário) ao invés de uma lista
-    if isinstance(GABARITOS, dict) and "status" in GABARITOS:
-        return GABARITOS, 400
-    
-    # Verifica se a lista de gabaritos está vazia
-    if not GABARITOS or len(GABARITOS) == 0:
-        return {"status": "bad_request", "message": "Nenhum gabarito válido foi encontrado."}, 400
 
     if file_storage and allowed_file(file_storage.filename):
         try:
             # Read image file directly from memory
             file_data = file_storage.read()
-            if not file_data or len(file_data) == 0:
-                return {"status": "invalid_image", "message": "Arquivo de imagem vazio ou inválido"}, 400
-            
             nparr = np.frombuffer(file_data, np.uint8)
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            
-            # Verifica se a imagem foi decodificada corretamente
-            if img is None or img.size == 0:
-                return {"status": "invalid_image", "message": "Não foi possível decodificar a imagem. Verifique se o arquivo é uma imagem válida (JPG, PNG, JPEG)."}, 400
 
             # Create a temporary file
             with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
                 temp_filename = temp_file.name
-                # Salva a imagem e verifica se foi salva corretamente
-                success = cv2.imwrite(temp_filename, img)
-                if not success:
-                    return {"status": "processing_error", "message": "Erro ao salvar imagem temporária"}, 500
-                
-                # Verifica se o arquivo foi criado e tem conteúdo
-                if not os.path.exists(temp_filename) or os.path.getsize(temp_filename) == 0:
-                    return {"status": "processing_error", "message": "Arquivo temporário não foi criado corretamente"}, 500
+                cv2.imwrite(temp_filename, img)
 
             try:
                 # Process the OMR image
@@ -229,13 +195,11 @@ def process_request(file_storage, gabarito_json_str: Optional[str]) -> Tuple[Dic
             finally:
                 # Clean up the temporary file
                 try:
-                    if os.path.exists(temp_filename):
-                        os.unlink(temp_filename)
+                    os.unlink(temp_filename)
                 except Exception:
                     pass
         except Exception as e:
             return {"status": "processing_error", "message": f"Erro ao processar a imagem: {str(e)}"}, 200
 
     return {"status": "invalid_file_type", "message": f"Tipo de arquivo não permitido. Use: {', '.join(ALLOWED_EXTENSIONS)}"}, 200
-
 

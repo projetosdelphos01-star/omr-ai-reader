@@ -133,19 +133,7 @@ class OMRGrader:
             if q >= results['total_questions']:
                 break
             
-            # Verifica se temos bolhas suficientes para esta questão
-            if i + self.num_alternativas > len(self.question_contours):
-                print(f"[AVISO] Questão {q+1}: Não há bolhas suficientes (esperado {self.num_alternativas}, encontrado {len(self.question_contours) - i})")
-                break
-            
-            # Ordena as alternativas da esquerda para direita para garantir ordem correta
-            # Se o método left-to-right não existir, ordena manualmente pela coordenada X
-            try:
-                cnts_q = contours.sort_contours(self.question_contours[i:i + self.num_alternativas], method="left-to-right")[0]
-            except (ValueError, TypeError):
-                # Fallback: ordena manualmente pela coordenada X do centro
-                cnts_q = self.question_contours[i:i + self.num_alternativas]
-                cnts_q = sorted(cnts_q, key=lambda c: cv2.boundingRect(c)[0])
+            cnts_q = contours.sort_contours(self.question_contours[i:i + self.num_alternativas])[0]
             
             # Lista para armazenar a contagem de pixels preenchidos para cada bolha
             bubble_scores = []
@@ -173,9 +161,9 @@ class OMRGrader:
                 # Calcular a diferença percentual em relação à segunda maior pontuação
                 diff_ratio = (bubble_scores[0][0] - bubble_scores[1][0]) / bubble_scores[0][0]
                 
-                # Definição dos limiares - valores mais restritivos para evitar falsos positivos
-                MIN_FILL_THRESHOLD = 0.25  # Pelo menos 25% preenchido para considerar marcada
-                MIN_DIFF_RATIO = 0.15      # Pelo menos 15% de diferença entre primeira e segunda bolha
+                # Definição dos limiares
+                MIN_FILL_THRESHOLD = 0.3  # Mínimo de preenchimento para considerar uma bolha marcada
+                MIN_DIFF_RATIO = 0.3   # Diferença mínima para considerar uma bolha como marcada
                 
                 # Debug: mostrar informações das bolhas
                 if self.debug_mode:
@@ -185,7 +173,8 @@ class OMRGrader:
                     print(f"Diferença entre 1ª e 2ª: {diff_ratio*100:.1f}%")
                     print(f"Limite mínimo de diferença: {MIN_DIFF_RATIO*100}%")
                     print(f"Limite mínimo de preenchimento: {MIN_FILL_THRESHOLD*100}%")
-                
+                print(f"MIN_FILL_THRESHOLD {diff_ratio}")
+                print(f"MIN_DIFF_RATIO {bubble_scores[0][0]}")
                 # Verificar se a diferença é significativa e se o preenchimento é suficiente
                 if diff_ratio > MIN_DIFF_RATIO and bubble_scores[0][0] > MIN_FILL_THRESHOLD:
                    
@@ -198,18 +187,7 @@ class OMRGrader:
                     if bubble_scores[0][0] <= MIN_FILL_THRESHOLD:
                         print(f"Nenhuma bolha marcada: preenchimento máximo ({bubble_scores[0][0]*100:.1f}%) abaixo do limite mínimo")
             
-            # Usa .get() para evitar KeyError se a questão não existir no gabarito
-            correct_answer_idx = self.answer_key.get(q, -1)
-            
-            if correct_answer_idx == -1:
-                print(f"[AVISO] Questão {q+1} (índice {q}) não encontrada no gabarito. Gabarito tem {len(self.answer_key)} questões.")
-                results['marked_answers'].append({
-                    'question': q + 1,
-                    'marked': marked_answer_idx,
-                    'correct': -1,
-                    'is_correct': False
-                })
-                continue
+            correct_answer_idx = self.answer_key[q]
             
             results['marked_answers'].append({
                 'question': q + 1,
@@ -221,14 +199,13 @@ class OMRGrader:
             if marked_answer_idx == correct_answer_idx:
                 results['correct_answers'] += 1
                 
-            if self.debug_mode and marked_answer_idx != -1 and correct_answer_idx != -1:
-                # Verifica se o índice está dentro do range
-                if 0 <= correct_answer_idx < len(cnts_q):
-                    color = (0, 255, 0) if marked_answer_idx == correct_answer_idx else (0, 0, 255)
-                    cnt = cnts_q[correct_answer_idx]
-                    M = cv2.moments(cnt)
-                    center = (int(M['m10']/M['m00']), int(M['m01']/M['m00'])) if M['m00'] != 0 else tuple(map(int, cv2.minEnclosingCircle(cnt)[0]))
-                    cv2.circle(self.paper, center, self.median_radius, color, 2)
+            if self.debug_mode and marked_answer_idx != -1:
+                
+                color = (0, 255, 0) if marked_answer_idx == correct_answer_idx else (0, 0, 255)
+                cnt = cnts_q[correct_answer_idx]
+                M = cv2.moments(cnt)
+                center = (int(M['m10']/M['m00']), int(M['m01']/M['m00'])) if M['m00'] != 0 else tuple(map(int, cv2.minEnclosingCircle(cnt)[0]))
+                cv2.circle(self.paper, center, self.median_radius, color, 2)
         
         results['score'] = (results['correct_answers'] / results['total_questions']) * 100 if results['total_questions'] > 0 else 0
         return results
@@ -292,5 +269,4 @@ if __name__ == "__main__":
 
     # --- Processa a imagem da prova ---
     grader.processar_prova(CAMINHO_DA_IMAGEM)
-
 
