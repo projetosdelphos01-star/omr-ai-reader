@@ -48,7 +48,7 @@ class RectangleDetector:
 
 if __name__ == '__main__':
     # Altere o nome da imagem conforme necessário
-    IMAGE_PATH = "images_test\prova10.jpeg"
+    IMAGE_PATH = "images_test/prova10.jpeg"
 
     try:
         # --- ETAPA 1: Processar o documento ---
