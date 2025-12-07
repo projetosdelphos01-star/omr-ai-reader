@@ -1,9 +1,48 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from flasgger import Swagger, swag_from
 from omr.service import process_request
 from audio_converter.audio_service import analyze_audio_request
+import re
 
 app = Flask(__name__)
+
+# Função para validar origens permitidas
+def is_origin_allowed(origin):
+    """Verifica se a origem é permitida"""
+    if not origin:
+        return True  # Permite requisições sem origin (mobile apps, curl, etc)
+    
+    # Origens de produção permitidas
+    allowed_production = [
+        'https://florescer.tec.br',
+        'https://www.florescer.tec.br',
+        'https://api.florescer.tec.br',
+        'https://ia.florescer.tec.br',
+    ]
+    
+    if origin in allowed_production:
+        return True
+    
+    # Permite localhost em qualquer porta (desenvolvimento)
+    if re.match(r'^http://localhost:\d+$', origin) or re.match(r'^http://127\.0\.0\.1:\d+$', origin):
+        return True
+    
+    # Permite IPs de rede local
+    if re.match(r'^http://192\.168\.\d+\.\d+:\d+$', origin) or \
+       re.match(r'^http://10\.\d+\.\d+\.\d+:\d+$', origin) or \
+       re.match(r'^http://172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+:\d+$', origin):
+        return True
+    
+    return False
+
+# Configurar CORS para permitir requisições do frontend
+CORS(app, 
+     origins=is_origin_allowed,
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+     allow_headers=['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
+     supports_credentials=True)
+
 swagger = Swagger(app)
 
    
