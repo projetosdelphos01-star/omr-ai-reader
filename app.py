@@ -38,9 +38,9 @@ def origin_check(origin):
     return False
 
 # Configurar CORS para permitir requisições do frontend
-# Usando função para validar origens dinamicamente
+# Usando função para validar origens dinamicamente via after_request
 CORS(app, 
-     origins=origin_check,  # Função que valida as origens
+     resources={r"/api/*": {"origins": "*"}},  # Permite todas as origens para /api/*
      methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
      allow_headers=['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
      supports_credentials=True,
