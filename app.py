@@ -4,6 +4,7 @@ from flasgger import Swagger, swag_from
 from omr.service import process_request
 from audio_converter.audio_service import analyze_audio_request
 import re
+import json
 
 app = Flask(__name__)
 
@@ -119,15 +120,36 @@ def analyze_audio():
     if request.method == 'OPTIONS':
         return '', 200
 
-    # em app.py, dentro de analyze_audio()
-    print("Content-Type:", request.content_type)
-    print("FILES keys:", list(request.files.keys()))
-    print("FORM keys:", list(request.form.keys()))
+    # Logs de depuração na rota
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    print(f"[{timestamp}] [ROUTE_DEBUG] Recebida requisição POST /api/analisar-audio")
+    print(f"[{timestamp}] [ROUTE_DEBUG] Content-Type: {request.content_type}")
+    print(f"[{timestamp}] [ROUTE_DEBUG] FILES keys: {list(request.files.keys())}")
+    print(f"[{timestamp}] [ROUTE_DEBUG] FORM keys: {list(request.form.keys())}")
+    
+    audio_file = request.files.get('audio')
+    texto = request.form.get('texto')
+    
+    if audio_file:
+        print(f"[{timestamp}] [ROUTE_DEBUG] Arquivo recebido: {audio_file.filename}, tamanho: {audio_file.content_length if hasattr(audio_file, 'content_length') else 'N/A'}")
+    else:
+        print(f"[{timestamp}] [ROUTE_DEBUG] Nenhum arquivo de áudio encontrado")
+    
+    if texto:
+        print(f"[{timestamp}] [ROUTE_DEBUG] Texto de referência recebido, tamanho: {len(texto)} caracteres")
+        print(f"[{timestamp}] [ROUTE_DEBUG] Texto preview: {texto[:100]}..." if len(texto) > 100 else f"[{timestamp}] [ROUTE_DEBUG] Texto: {texto}")
+    else:
+        print(f"[{timestamp}] [ROUTE_DEBUG] Nenhum texto de referência fornecido")
+    
     result, status = analyze_audio_request(
-        file_storage=request.files.get('audio'),
-        reference_text=request.form.get('texto')
+        file_storage=audio_file,
+        reference_text=texto
     )
-    print(result)
+    
+    print(f"[{timestamp}] [ROUTE_DEBUG] Resultado retornado, status: {status}")
+    print(f"[{timestamp}] [ROUTE_DEBUG] Resultado: {json.dumps(result, ensure_ascii=False, default=str)[:500]}...")
+    
     return jsonify(result), status
 
 @app.route('/')
