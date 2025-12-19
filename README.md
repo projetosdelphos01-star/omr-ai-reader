@@ -3,7 +3,7 @@
 API em Flask com documentação Swagger para:
 
 - Correção automática de gabaritos por OMR (detecção de bolhas em imagens)
-- Análise de leitura oral a partir de áudio, com avaliação de fluência, pronúncia e alinhamento opcional com texto de referência (via Google Gemini)
+- Análise de leitura oral a partir de áudio, com avaliação de fluência, pronúncia e alinhamento opcional com texto de referência (via OpenAI Whisper + GPT-4o)
 
 Abra a documentação interativa em: `http://localhost:5000/apidocs`
 
@@ -30,7 +30,7 @@ Abra a documentação interativa em: `http://localhost:5000/apidocs`
 - Python 3.10+ (recomendado)
 - Pip e virtualenv
 - Dependências listadas em `requirements.txt`
-- Para o endpoint de áudio: uma chave de API do Google Gemini válida
+- Para o endpoint de áudio: uma chave de API da OpenAI válida
 
 
 ### Instalação e execução
@@ -45,7 +45,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 REM Configurar a chave (veja seção Variáveis de ambiente)
-set GOOGLE_API_KEY=SEU_TOKEN
+set OPENAI_API_KEY=SEU_TOKEN
 
 python app.py
 ```
@@ -58,12 +58,12 @@ Acesse:
 
 ### Variáveis de ambiente
 
-- `GOOGLE_API_KEY` ou `GEMINI_API_KEY`: chave do Google Gemini para uso no endpoint de áudio.
+- `OPENAI_API_KEY`: chave da OpenAI para uso no endpoint de áudio (Whisper + GPT-4o).
 
 Notas:
 
 - Não utilize chaves hardcoded em produção. Sempre configure via variável de ambiente.
-- O código tenta ler `GOOGLE_API_KEY` ou `GEMINI_API_KEY`.
+- A chave deve ter permissões para usar os modelos `whisper-1` e `gpt-4o-mini`.
 
 
 ### Endpoints da API
@@ -145,7 +145,7 @@ Possíveis status:
 - Rota: `/api/analisar-audio`
 - Consome: `multipart/form-data`
 - Campos do formulário:
-  - `audio` (file) — formatos aceitos: `mp3`, `wav`, `m4a`, `ogg`
+  - `audio` (file) — formatos aceitos: `mp3`, `wav`, `m4a`, `ogg`, `webm`
   - `texto` (string) — opcional, texto de referência para alinhamento/comparação
 
 Exemplo de chamada (Windows):
@@ -189,7 +189,7 @@ Erros comuns:
 
 - `no_file`: sem arquivo enviado
 - `invalid_file_type`: extensão não permitida
-- `config_error`: variável `GOOGLE_API_KEY` não configurada
+- `config_error`: variável `OPENAI_API_KEY` não configurada
 - `processing_error`: falha interna durante a análise
 
 
@@ -207,7 +207,7 @@ colins ia/
   app.py                      # Inicializa Flask e define rotas; integra Swagger
   requirements.txt            # Dependências
   audio_converter/
-    audio_service.py          # Lógica de análise de áudio com Google Gemini
+    audio_service.py          # Lógica de análise de áudio com OpenAI (Whisper + GPT-4o)
   omr/
     service.py                # Fluxo principal do OMR (leitura de imagem, validações, retorno)
     utils.py                  # Conversão de gabaritos de letras -> números
@@ -228,7 +228,7 @@ colins ia/
 - O endpoint OMR espera detectar exatamente 2 retângulos (duas áreas) na folha. Se a sua folha tiver outro layout, ajuste a lógica em `omr/service.py`.
 - Para Windows PowerShell, use `curl.exe` para evitar conflito com o alias `Invoke-WebRequest`.
 - Para enviar JSON em `multipart/form-data` no Windows, prefira o upload via arquivo (`@gabarito.json;type=application/json`).
-- Configuração da chave do Gemini: exporte `GOOGLE_API_KEY`/`GEMINI_API_KEY` antes de subir a API.
+- Configuração da chave da OpenAI: exporte `OPENAI_API_KEY` antes de subir a API.
 
 
 ### Desenvolvimento

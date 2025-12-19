@@ -7,7 +7,7 @@ parameters:
     in: formData
     type: file
     required: true
-    description: "Arquivo de áudio do aluno (formatos: mp3, wav, m4a, ogg)"
+    description: "Arquivo de áudio do aluno (formatos: mp3, wav, m4a, ogg, webm)"
   - name: texto
     in: formData
     type: string
