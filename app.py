@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 # Lista de origens permitidas
 allowed_origins = [
-    'https://florescer.tec.br',
+    'https://app.florescer.tec.br',
     'https://www.florescer.tec.br',
     'https://api.florescer.tec.br',
     'https://ia.florescer.tec.br',
