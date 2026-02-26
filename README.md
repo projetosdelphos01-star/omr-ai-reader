@@ -13,6 +13,7 @@ Abra a documentação interativa em: `http://localhost:5000/apidocs`
 - Visão geral
 - Requisitos
 - Instalação e execução
+- Produção
 - Variáveis de ambiente
 - Endpoints da API (com exemplos)
 - Estrutura do projeto
@@ -28,7 +29,7 @@ Abra a documentação interativa em: `http://localhost:5000/apidocs`
 ### Requisitos
 
 - Python 3.10+ (recomendado)
-- Pip e virtualenv
+- Pip e virtualenv (ou venv). **Não é necessário uv**; o projeto roda apenas com pip.
 - Dependências listadas em `requirements.txt`
 - Para o endpoint de áudio: uma chave de API da OpenAI válida
 
@@ -54,6 +55,24 @@ Acesse:
 
 - API: `http://localhost:5000/`
 - Swagger UI: `http://localhost:5000/apidocs`
+
+
+### Produção
+
+O projeto não depende do uv. Use venv e pip:
+
+1. Crie e ative o ambiente: `python -m venv .venv` e ative-o (`.venv\Scripts\activate` no Windows, `source .venv/bin/activate` no Linux/macOS).
+2. Instale as dependências: `pip install -r requirements.txt`.
+3. Configure `OPENAI_API_KEY` no ambiente.
+4. Rode com gunicorn (recomendado para produção):
+
+```bash
+gunicorn -w 1 -b 0.0.0.0:5000 "app:app"
+```
+
+Para systemd (servidor Linux), use um unit que chame o gunicorn do venv, **sem uv**. Exemplo em [deploy/florescer-ia.service.example](deploy/florescer-ia.service.example): o `ExecStart` usa `/caminho/para/florescer-ia/.venv/bin/gunicorn` em vez de `uv run gunicorn`.
+
+Para desenvolvimento, continue usando `python app.py` (porta 5000).
 
 
 ### Variáveis de ambiente
